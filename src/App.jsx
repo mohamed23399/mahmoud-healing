@@ -232,14 +232,27 @@ function KhatmahView({ deviceId, isDark }) {
   
   // بيانات الختمة المتقدمة
   const [khatmahInfo, setKhatmahInfo] = useState({ number: 1, userPagesRead: 0 });
+  const [globalCurrentPage, setGlobalCurrentPage] = useState(1); // لمعرفة الصفحة الحالية قبل الحجز
 
-  // جلب عدد صفحات المستخدم
+  // جلب البيانات الأولية للختمة وللمستخدم عند فتح الصفحة
   useEffect(() => {
-    const fetchUserStats = async () => {
+    const fetchInitialData = async () => {
+      // جلب عدد صفحات المستخدم من الجهاز
       const savedCount = localStorage.getItem('mahmoud_user_pages_read') || '0';
       setKhatmahInfo(prev => ({ ...prev, userPagesRead: parseInt(savedCount) }));
+
+      // جلب حالة الختمة الحالية من قاعدة البيانات
+      try {
+        const { data, error } = await supabase.from('khatmah_state').select('*').eq('id', 1).single();
+        if (!error && data) {
+          setGlobalCurrentPage(data.current_page);
+          setKhatmahInfo(prev => ({ ...prev, number: data.khatmah_number || 1 }));
+        }
+      } catch (err) {
+        console.error("Error fetching initial khatmah state:", err);
+      }
     };
-    fetchUserStats();
+    fetchInitialData();
   }, []);
 
   const reservePage = async () => {
@@ -260,6 +273,7 @@ function KhatmahView({ deviceId, isDark }) {
 
       const pageToRead = nextTargetPage === 1 ? 604 : nextTargetPage - 1;
       setMyPageNumber(pageToRead);
+      setGlobalCurrentPage(nextTargetPage); // تحديث العرض
       setKhatmahInfo(prev => ({ ...prev, number: pageToRead === 604 ? nextKhatmahNum - 1 : nextKhatmahNum }));
       
       fetchQuranPage(pageToRead);
@@ -302,9 +316,14 @@ function KhatmahView({ deviceId, isDark }) {
         <BookOpen className={`w-20 h-20 mb-4 ${isDark ? 'text-teal-700' : 'text-teal-200'}`} />
         <h2 className={`text-xl font-bold mb-4 ${isDark ? 'text-teal-400' : 'text-teal-800'}`}>الختمة التشاركية</h2>
         
-        {/* معلومات المستخدم */}
+        {/* معلومات الختمة للمستخدمين */}
         <div className={`mb-6 p-4 rounded-xl text-sm border inline-block min-w-[200px] ${isDark ? 'bg-slate-800 border-slate-700 text-teal-300' : 'bg-teal-50 border-teal-100 text-teal-800'}`}>
-           <p className="font-bold">إجمالي ما قرأته: <span className="text-lg">{khatmahInfo.userPagesRead}</span> صفحة</p>
+           <p className="font-bold mb-2 border-b border-current/20 pb-2">
+             الختمة الحالية: <span className="text-lg">رقم {khatmahInfo.number}</span>
+             <br/>
+             <span className="text-xs opacity-80">وصلنا للصفحة: {globalCurrentPage}</span>
+           </p>
+           <p className="font-bold">إجمالي ما قرأته أنت: <span className="text-lg text-emerald-500">{khatmahInfo.userPagesRead}</span> صفحة</p>
         </div>
 
         <p className={`mb-8 text-sm px-4 ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>اضغط لحجز صفحة تقرأها بنية الشفاء.</p>
@@ -318,7 +337,6 @@ function KhatmahView({ deviceId, isDark }) {
 
   return (
     <div className="pb-10">
-      {/* شريط معلومات الختمة المتقدم */}
       <div className={`flex flex-col gap-2 mb-4 p-3 rounded-xl font-bold text-sm border ${isDark ? 'bg-slate-800 border-slate-700 text-teal-300' : 'bg-teal-100 border-teal-200 text-teal-800'}`}>
         <div className="flex justify-between items-center border-b pb-2 border-current/20">
            <span>الختمة رقم: {khatmahInfo.number}</span>
