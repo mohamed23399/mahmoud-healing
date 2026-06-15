@@ -79,7 +79,6 @@ export default function App() {
               <Menu className="w-6 h-6" />
             </button>
             <div className="flex items-center gap-2">
-              {/* صورة محمود في الهيدر */}
               <div className="w-9 h-9 rounded-full overflow-hidden border-2 border-teal-200/50 bg-teal-100 flex-shrink-0">
                 <img src="/mahmoud.jpg" alt="محمود صلاح" className="w-full h-full object-cover" onError={(e) => { e.target.onerror = null; e.target.src = 'https://api.dicebear.com/7.x/initials/svg?seed=M&backgroundColor=0d9488'; }} />
               </div>
@@ -230,18 +229,14 @@ function KhatmahView({ deviceId, isDark }) {
   const [completed, setCompleted] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
   
-  // بيانات الختمة المتقدمة
   const [khatmahInfo, setKhatmahInfo] = useState({ number: 1, userPagesRead: 0 });
-  const [globalCurrentPage, setGlobalCurrentPage] = useState(1); // لمعرفة الصفحة الحالية قبل الحجز
+  const [globalCurrentPage, setGlobalCurrentPage] = useState(1); 
 
-  // جلب البيانات الأولية للختمة وللمستخدم عند فتح الصفحة
   useEffect(() => {
     const fetchInitialData = async () => {
-      // جلب عدد صفحات المستخدم من الجهاز
       const savedCount = localStorage.getItem('mahmoud_user_pages_read') || '0';
       setKhatmahInfo(prev => ({ ...prev, userPagesRead: parseInt(savedCount) }));
 
-      // جلب حالة الختمة الحالية من قاعدة البيانات
       try {
         const { data, error } = await supabase.from('khatmah_state').select('*').eq('id', 1).single();
         if (!error && data) {
@@ -258,27 +253,23 @@ function KhatmahView({ deviceId, isDark }) {
   const reservePage = async () => {
     setLoading(true); setErrorMsg('');
     try {
-      const { data, error } = await supabase.from('khatmah_state').select('*').eq('id', 1).single();
+      // التنفيذ الآن في حركة واحدة (Atomic) عبر قاعدة البيانات لضمان عدم التداخل نهائياً
+      const { data, error } = await supabase.rpc('reserve_next_khatmah_page');
       if (error) throw error;
 
-      let nextTargetPage = data.current_page + 1;
-      let nextKhatmahNum = data.khatmah_number || 1;
-      
-      if (nextTargetPage > 604) {
-        nextTargetPage = 1;
-        nextKhatmahNum += 1;
-      }
+      const pageToRead = data.assigned_page;
+      const currentKhatmahNum = data.khatmah_number;
 
-      await supabase.from('khatmah_state').update({ current_page: nextTargetPage, khatmah_number: nextKhatmahNum }).eq('id', 1);
-
-      const pageToRead = nextTargetPage === 1 ? 604 : nextTargetPage - 1;
       setMyPageNumber(pageToRead);
-      setGlobalCurrentPage(nextTargetPage); // تحديث العرض
-      setKhatmahInfo(prev => ({ ...prev, number: pageToRead === 604 ? nextKhatmahNum - 1 : nextKhatmahNum }));
+      setGlobalCurrentPage(pageToRead === 604 ? 1 : pageToRead + 1); 
+      setKhatmahInfo(prev => ({ ...prev, number: currentKhatmahNum }));
       
       fetchQuranPage(pageToRead);
     } catch (error) {
-      setErrorMsg('حدث خطأ. حاول مرة أخرى.'); setLoading(false);
+      console.error("Error reserving page:", error);
+      setErrorMsg('حدث خطأ أثناء الاتصال بالخادم. يرجى المحاولة مرة أخرى.');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -316,7 +307,6 @@ function KhatmahView({ deviceId, isDark }) {
         <BookOpen className={`w-20 h-20 mb-4 ${isDark ? 'text-teal-700' : 'text-teal-200'}`} />
         <h2 className={`text-xl font-bold mb-4 ${isDark ? 'text-teal-400' : 'text-teal-800'}`}>الختمة التشاركية</h2>
         
-        {/* معلومات الختمة للمستخدمين */}
         <div className={`mb-6 p-4 rounded-xl text-sm border inline-block min-w-[200px] ${isDark ? 'bg-slate-800 border-slate-700 text-teal-300' : 'bg-teal-50 border-teal-100 text-teal-800'}`}>
            <p className="font-bold mb-2 border-b border-current/20 pb-2">
              الختمة الحالية: <span className="text-lg">رقم {khatmahInfo.number}</span>
@@ -415,18 +405,25 @@ function TasbeehView({ deviceId, isDark }) {
   const handleTasbeeh = async () => {
     if (!dbReady) return;
     setIsAnimating(true); setTimeout(() => setIsAnimating(false), 150);
-    const newLocalCount = (localCounts[selectedType.id] || 0) + 1;
-    const newGlobalCount = (globalCounts[selectedType.id] || 0) + 1;
     
+    // التحديث للعداد الخاص بالمستخدم محلياً فقط 
+    const newLocalCount = (localCounts[selectedType.id] || 0) + 1;
     setLocalCounts(prev => ({ ...prev, [selectedType.id]: newLocalCount }));
-    setGlobalCounts(prev => ({ ...prev, [selectedType.id]: newGlobalCount }));
-
+    
     try {
-      await supabase.from('tasbeeh_counters').update({ count: newGlobalCount }).eq('id', selectedType.id);
+      // استلام الرقم الحقيقي من الخادم لضمان الدقة بدلاً من تخمينه
+      const { data: realGlobalCount, error } = await supabase.rpc('increment_tasbeeh_count', { dhikr_id: selectedType.id });
+      
+      if (!error && realGlobalCount) {
+         setGlobalCounts(prev => ({ ...prev, [selectedType.id]: realGlobalCount }));
+      }
+
       if (deviceId) {
         await supabase.from('user_tasbeeh_counts').upsert({ device_id: deviceId, dhikr_id: selectedType.id, count: newLocalCount }, { onConflict: 'device_id, dhikr_id' });
       }
-    } catch (err) { }
+    } catch (err) { 
+      console.error("Error updating tasbeeh:", err);
+    }
   };
 
   return (
@@ -469,11 +466,9 @@ function TasbeehView({ deviceId, isDark }) {
 function DuasView({ isDark }) {
     const duas = [
       { category: "فضل الدعاء", items: [
-        "عن أبي هريرة قال: قال رسول الله صلى الله عليه وسلم: ((رُبَّ أشعثَ أغبَرَ مدفوعٍ بالأبواب، لو أقسَمَ على الله لَأَبَرَّهُ))؛ رواه مسلم.",
+        "عن أبي هريرة قال: قال رسول الله صلى الله عليه وسلم: ((رُبَّ أشعثَ أغبَرَ مدفوعٍ بالأبواب، لو أقسَمَ على الله لَأَبَرَّهُ))؛ رواه مسلم.",
         "استجابة الدعاء بظهر الغيب: دعوة المسلم لأخيه بظهر الغيب مستجابة، ويُصاحبها تأمين من الملائكة.",
         "أجر وثواب عظيم: العائد للمريض أو الداعي له ينال رحمة الله، وتستغفر له الملائكة حتى يمسي أو يصبح، ويكون له موضع في الجنة.",
-
-
       ]},
       { category: "أدعية الشفاء العام", items: [
           "اللهم اشفِ محمود صلاح شفاءً ليس بعده سقم أبداً، اللهم خذ بيده.",
