@@ -142,7 +142,7 @@ function RegistrationView({ onRegisterSuccess }) {
         
         <HeartPulse className="w-20 h-20 text-teal-600 mx-auto mb-6 relative z-10 animate-pulse" />
         <h2 className="text-2xl font-bold text-teal-800 mb-2 relative z-10">صدقة جارية بنية الشفاء</h2>
-        <h3 className="text-xl font-bold text-slate-700 mb-6 relative z-10">للأخ / محمود صلاح</h3>
+        <h3 className="text-xl font-bold text-slate-700 mb-6 relative z-10">لحبيبنا / محمود صلاح</h3>
         
         <p className="text-slate-600 leading-relaxed mb-8 relative z-10 text-sm">
           أهلاً بك في هذه الحملة المباركة. لحفظ تقدمك في الختمة وعداد التسبيح الخاص بك، يرجى إدخال اسم مستعار للبدء.
