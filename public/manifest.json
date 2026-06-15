@@ -1,0 +1,20 @@
+{
+  "name": "شفاء محمود صلاح",
+  "short_name": "شفاء محمود",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f0fdfa",
+  "theme_color": "#0f766e",
+  "icons": [
+    {
+      "src": "/mahmoud.jpg",
+      "sizes": "192x192",
+      "type": "image/jpeg"
+    },
+    {
+      "src": "/mahmoud.jpg",
+      "sizes": "512x512",
+      "type": "image/jpeg"
+    }
+  ]
+}

@@ -376,11 +376,12 @@ function KhatmahView({ deviceId, isDark }) {
 
 function TasbeehView({ deviceId, isDark }) {
   const dhikrOptions = [
+    { id: 'tasbeeh', title: 'تسبيح', label: 'سبحان الله وبحمده سبحان الله العظيم' },
     { id: 'istighfar', title: 'استغفار', label: 'أستغفر الله العظيم' },
-    { id: 'salawat', title: 'صلاة على النبي', label: 'اللهم صل وسلم على نبينا محمد' },
-    { id: 'tasbeeh', title: 'تسبيح', label: 'سبحان الله وبحمده' },
+    { id: 'salawat', title: 'صلاة على النبي', label: 'اللهم صل على محمد عبدك ورسولك، كما صليت على إبراهيم ، وبارك على محمد، وعلى آل محمد، كما باركت على إبراهيم، وعلى آل إبراهيم، إنك حميد مجيد' },
     { id: 'hawqala', title: 'حوقلة', label: 'لا حول ولا قوة إلا بالله' },
-    { id: 'dua', title: 'دعاء الشفاء', label: 'اللهم اشفِ محمود صلاح' },
+    { id: 'dua', title: 'دعاء الشفاء', label: 'اللهم اشفِ محمود صلاح شفاء لا يغادر سقما' },
+    { id: 'azkar', title: 'اذكار', label: 'سبحان الله والحمد لله ولا اله الا الله وحده لا شريك له الملك وله الحمد وهو على كل شيء قدير' },
   ];
 
   const [selectedType, setSelectedType] = useState(dhikrOptions[0]);
@@ -453,10 +454,10 @@ function TasbeehView({ deviceId, isDark }) {
       </div>
 
       <div className="text-center mb-10 w-full">
-        <p className={`text-xl font-bold mb-6 h-14 flex items-center justify-center ${isDark ? 'text-slate-200' : 'text-teal-900'}`}>
+        <p className={`text-xl font-bold mb-12 h-20 flex items-center justify-center ${isDark ? 'text-slate-200' : 'text-teal-900'}`}>
           {selectedType.label}
         </p>
-        <button onClick={handleTasbeeh} disabled={!dbReady} className={`w-64 h-64 mx-auto rounded-full text-white shadow-lg flex flex-col items-center justify-center transition-transform ${isAnimating ? 'scale-95' : 'scale-100'} ${!dbReady ? 'opacity-50 cursor-not-allowed' : ''} ${isDark ? 'bg-gradient-to-br from-teal-700 to-slate-800 border border-teal-600/30' : 'bg-gradient-to-br from-teal-500 to-emerald-600'}`} style={{ WebkitTapHighlightColor: 'transparent' }}>
+        <button onClick={handleTasbeeh} disabled={!dbReady} className={`w-64 h-64 mx-auto rounded-full text-white shadow-lg flex flex-col items-center justify-center transition-transform ${isAnimating ? 'scale-95' : 'scale-80'} ${!dbReady ? 'opacity-50 cursor-not-allowed' : ''} ${isDark ? 'bg-gradient-to-br from-teal-700 to-slate-800 border border-teal-600/30' : 'bg-gradient-to-br from-teal-500 to-emerald-600'}`} style={{ WebkitTapHighlightColor: 'transparent' }}>
           <span className="text-6xl font-bold mb-2">{localCounts[selectedType.id] || 0}</span>
           <span className={`text-sm font-medium ${isDark ? 'text-teal-200' : 'text-teal-100'}`}>تسبيحك المحفوظ</span>
         </button>
